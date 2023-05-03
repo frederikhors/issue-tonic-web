@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package world;
+
+service WorldGreeter {
+  rpc SayWorld (WorldRequest) returns (WorldReply) {}
+}
+
+message WorldRequest {
+  string name = 1;
+}
+
+message WorldReply {
+  string message = 1;
+}
