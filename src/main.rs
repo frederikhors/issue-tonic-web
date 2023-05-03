@@ -9,16 +9,11 @@ pub mod routes;
 async fn main() {
     let mut api = axum::Router::new().route("/api", get(|| async { "Hello, World!" }));
 
-    let grpc_server = grpc::new_grpc_server();
-
-    // Is it possible to move this func in grpc::new_grpc_server() ?
     let grpc = HandleErrorLayer::new(|err: BoxError| async move {
         eprintln!("{} {}", err, "grpc service failed");
-        // from https://docs.rs/tonic/latest/src/tonic/status.rs.html#100
-        let internal_error_code = 13;
-        [("grpc-status", internal_error_code)]
+        [("grpc-status", 13)]
     })
-    .layer(grpc_server.into_service());
+    .layer(grpc::new_grpc_server());
 
     api = api.nest_service("/grpc", grpc);
 
