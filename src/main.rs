@@ -20,7 +20,7 @@ async fn main() {
     })
     .layer(grpc_server.into_service());
 
-    api = api.nest_service("/*rpc", grpc);
+    api = api.nest_service("/grpc", grpc);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
