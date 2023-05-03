@@ -1,6 +1,7 @@
 use crate::routes::grpc;
-use axum::routing::get;
+use axum::{error_handling::HandleErrorLayer, routing::get, BoxError};
 use std::net::SocketAddr;
+use tower::Layer;
 
 pub mod routes;
 
@@ -10,12 +11,16 @@ async fn main() {
 
     let grpc_server = grpc::new_grpc_server();
 
-    api = api.route(
-        "/*rpc",
-        // I don't know what to use here
-        axum::routing::any_service(grpc_server.into_service()),
-        // get(grpc_server.into_service())
-    );
+    // Is it possible to move this func in grpc::new_grpc_server() ?
+    let grpc = HandleErrorLayer::new(|err: BoxError| async move {
+        eprintln!("{} {}", err, "grpc service failed");
+        // from https://docs.rs/tonic/latest/src/tonic/status.rs.html#100
+        let internal_error_code = 13;
+        [("grpc-status", internal_error_code)]
+    })
+    .layer(grpc_server.into_service());
+
+    api = api.nest_service("/*rpc", grpc);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 

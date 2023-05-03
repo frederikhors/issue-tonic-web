@@ -11,7 +11,7 @@ use super::gen::{
 use tonic::{transport::server::Router, Response, Status};
 
 #[derive(Default)]
-struct HelloServiceImpl {}
+pub struct HelloServiceImpl {}
 
 #[tonic::async_trait]
 impl HelloGreeter for HelloServiceImpl {
@@ -30,7 +30,7 @@ impl HelloGreeter for HelloServiceImpl {
 }
 
 #[derive(Default)]
-struct WorldServiceImpl {}
+pub struct WorldServiceImpl {}
 
 #[tonic::async_trait]
 impl WorldGreeter for WorldServiceImpl {
@@ -49,13 +49,24 @@ impl WorldGreeter for WorldServiceImpl {
 }
 
 pub fn new_grpc_server() -> Router {
-    // I need to expose these services as grpc-web (using tonic_web I think)
+    // I need to expose these services as grpc-web using tonic_web
+    let router = tonic::transport::Server::builder()
+        .add_service(tonic_web::enable(HelloGreeterServer::new(
+            HelloServiceImpl::default(),
+        )))
+        .add_service(tonic_web::enable(WorldGreeterServer::new(
+            WorldServiceImpl::default(),
+        )));
 
-    // let server = tonic_web::enable(GreeterServer::new(GrpcServiceImpl::default()));
+    // From https://github.com/tokio-rs/axum/discussions/1980
 
-    let server = tonic::transport::Server::builder()
-        .add_service(HelloGreeterServer::new(HelloServiceImpl::default()))
-        .add_service(WorldGreeterServer::new(WorldServiceImpl::default()));
+    // let grpc = HandleErrorLayer::new(|err: BoxError| async move {
+    //     eprintln!("{} {}", err, "grpc service failed");
+    //     // from https://docs.rs/tonic/latest/src/tonic/status.rs.html#100
+    //     let internal_error_code = 13;
+    //     [("grpc-status", internal_error_code)]
+    // })
+    // .layer(server);
 
-    server
+    router
 }
